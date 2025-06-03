@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "exact": "^1.0.1",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
+    "react-router-dom": "^5.3.4",
     "react-scripts": "^5.0.0"
   },
   "scripts": {
