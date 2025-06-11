@@ -1,19 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 
-import UsersList from '../components/UsersList';
+import UsersList from "../components/UsersList";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
 
 const Users = () => {
-  const USERS = [
-    {
-      id: 'u1',
-      name: 'Max Schwarz',
-      image:
-        'https://images.pexels.com/photos/839011/pexels-photo-839011.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-      places: 3
-    }
-  ];
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setLoading] = useState(false);
 
-  return <UsersList items={USERS} />;
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:5001/api/users");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(resData.message);
+        }
+        const resData = await response.json();
+        setUsers(resData.users || []);
+        setLoading(false);
+      } catch (error) {
+        setError(error.message || "somthing went wrong");
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  return (
+    <>
+      {isLoading && <LoadingSpinner asOverlay />}
+      <UsersList items={users} />
+    </>
+  );
 };
 
 export default Users;
