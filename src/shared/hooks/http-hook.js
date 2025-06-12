@@ -1,54 +1,56 @@
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/auth-context";
+import { useState, useCallback, useRef, useEffect } from 'react';
 
-export const useHttp = (method, path) => {
-  const auth = useContext(AuthContext);
-  const [users, setUsers] = useState([]);
-  const [error, setError] = useState(null);
+export const useHttpClient = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
+  const activeHttpRequests = useRef([]);
+
+  const sendRequest = useCallback(
+    async (url, method = 'GET', body = null, headers = {}) => {
+      setIsLoading(true);
+      const httpAbortCtrl = new AbortController();
+      activeHttpRequests.current.push(httpAbortCtrl);
+
       try {
-        setIsLoading(true);
-        const response = await fetch(path);
-        const resData = await response.json();
+        const response = await fetch(url, {
+          method,
+          body,
+          headers,
+          signal: httpAbortCtrl.signal
+        });
+
+        const responseData = await response.json();
+
+        activeHttpRequests.current = activeHttpRequests.current.filter(
+          reqCtrl => reqCtrl !== httpAbortCtrl
+        );
+
         if (!response.ok) {
-          throw new Error(resData.message);
+          throw new Error(responseData.message);
         }
-        setUsers(resData.users || []);
-        setIsLoading(false);
-      } catch (error) {
-        setError(error.message || "somthing went wrong");
-        setIsLoading(false);
-      }
-    };
-    if (method === "get") {
-      fetchUsers();
-    }
-  }, [method, path]);
 
-  const sendRequest = async (secondPath, body) => {
-    try {
-      const response = await fetch(secondPath, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: body,
-      });
-
-      const responseData = await response.json();
-      if (!response.ok) {
-        throw new Error(responseData.message);
+        setIsLoading(false);
+        return responseData;
+      } catch (err) {
+        setError(err.message);
+        setIsLoading(false);
+        throw err;
       }
-      setIsLoading(false);
-      auth.login();
-    } catch (err) {
-      setIsLoading(false);
-      setError(err.message || "Something went wrong, please try again.");
-    }
+    },
+    []
+  );
+
+  const clearError = () => {
+    setError(null);
   };
 
-  return [users, error, isLoading, setError, setIsLoading, sendRequest];
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      activeHttpRequests.current.forEach(abortCtrl => abortCtrl.abort());
+    };
+  }, []);
+
+  return { isLoading, error, sendRequest, clearError };
 };
