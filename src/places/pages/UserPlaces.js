@@ -14,13 +14,13 @@ const UserPlaces = () => {
     const fetchPlaces = async () => {
       try {
         const data = await sendRequest(
-          `http://localhost:5001/api/places/user/${userId}`
+          process.env.REACT_APP_BACKEND_URL + `/places/user/${userId}`
         );
         setPlaces(data.places);
       } catch (error) {}
     };
     fetchPlaces();
-  }, [(sendRequest, userId)]);
+  }, [sendRequest, userId]);
 
   const deleteHandler = (id) => {
     setPlaces(pre => pre.filter(place => place.id !== id))
