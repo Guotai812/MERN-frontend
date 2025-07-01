@@ -14,14 +14,18 @@ import Auth from "./user/pages/Auth";
 import MainNavigation from "./shared/components/Navigation/MainNavigation";
 import { AuthContext } from "./shared/context/auth-context";
 
+let logoutTimer;
+
 const App = () => {
   const [token, setToken] = useState(false);
+  const [tokenExpiration, setTokenExpiration] = useState(null);
   const [userId, setUserId] = useState(false);
 
   const login = useCallback((uid, token, expiration) => {
     setToken(token);
     const expiredData =
       expiration || new Date(new Date().getTime() + 1000 * 60 * 60);
+    setTokenExpiration(expiration);
     localStorage.setItem(
       "userData",
       JSON.stringify({
@@ -35,9 +39,19 @@ const App = () => {
 
   const logout = useCallback(() => {
     setToken(null);
+    setTokenExpiration(null);
     setUserId(null);
     localStorage.removeItem("userData");
   }, []);
+
+  useEffect(() => {
+    if (token && tokenExpiration) {
+      const remainingTime = new Date(tokenExpiration) - new Date();
+      logoutTimer = setTimeout(logout, remainingTime);
+    } else {
+      clearTimeout(logoutTimer);
+    }
+  }, [token, tokenExpiration, logout]);
 
   useEffect(() => {
     const storageData = JSON.parse(localStorage.getItem("userData"));
